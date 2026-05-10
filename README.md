@@ -204,7 +204,7 @@ Add screenshots for:
 ## 1. Clone Repository
 
 ```bash
-git clone <your-github-repo-url>
+git clone https://github.com/rahulrahu15/Smart-Leave-Absence-Management-Engine.git
 cd smart-leave-management-engine
 ```
 
