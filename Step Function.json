@@ -1,0 +1,99 @@
+{
+  "StartAt": "SendManagerApproval",
+  "States": {
+    "SendManagerApproval": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:ap-south-1:593814964617:function:lms-send-approval-email-dev",
+      "ResultPath": "$.managerData",
+      "Next": "WaitBeforeCheckManager"
+    },
+    "WaitBeforeCheckManager": {
+      "Type": "Wait",
+      "Seconds": 60,
+      "Next": "CheckManagerStatus"
+    },
+    "CheckManagerStatus": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:ap-south-1:593814964617:function:lms-check-status-dev",
+      "ResultPath": "$.managerStatus",
+      "Next": "ManagerDecision"
+    },
+    "ManagerDecision": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.managerStatus.manager_approved",
+          "BooleanEquals": true,
+          "Next": "CheckLeaveDays"
+        },
+        {
+          "Variable": "$.managerStatus.manager_rejected",
+          "BooleanEquals": true,
+          "Next": "RejectFlow"
+        }
+      ],
+      "Default": "WaitBeforeCheckManager"
+    },
+    "CheckLeaveDays": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.leave_days",
+          "NumericGreaterThan": 5,
+          "Next": "SendHRApproval"
+        }
+      ],
+      "Default": "FinalApproval"
+    },
+    "SendHRApproval": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:ap-south-1:593814964617:function:lms-send-hr-email-dev",
+      "ResultPath": "$.hrEmail",
+      "Next": "WaitBeforeCheckHR"
+    },
+    "WaitBeforeCheckHR": {
+      "Type": "Wait",
+      "Seconds": 60,
+      "Next": "CheckHRStatus"
+    },
+    "CheckHRStatus": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:ap-south-1:593814964617:function:lms-check-status-dev",
+      "ResultPath": "$.hrStatus",
+      "Next": "HRDecision"
+    },
+    "HRDecision": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.hrStatus.hr_approved",
+          "BooleanEquals": true,
+          "Next": "FinalApproval"
+        },
+        {
+          "Variable": "$.hrStatus.hr_rejected",
+          "BooleanEquals": true,
+          "Next": "RejectFlow"
+        }
+      ],
+      "Default": "WaitBeforeCheckHR"
+    },
+    "FinalApproval": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:ap-south-1:593814964617:function:lms-final-approve-dev",
+      "ResultPath": "$",
+      "Next": "NotifyEmployee"
+    },
+    "RejectFlow": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:ap-south-1:593814964617:function:lms-final-reject-dev",
+      "ResultPath": "$",
+      "Next": "NotifyEmployee"
+    },
+    "NotifyEmployee": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:ap-south-1:593814964617:function:lms-notify-employee-dev",
+      "End": true
+    }
+  }
+}
